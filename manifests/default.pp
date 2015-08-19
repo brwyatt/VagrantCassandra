@@ -1,17 +1,20 @@
-node 'router' {
+node /router[0-9]{2}/ {
   include ::profiles::router
 }
 
+# Datacenter 1
 node /node1[0-9]{2}/ {
-  include ::profiles::environments::net10
+  include ::profiles::environments::net1
 }
 
+# Datacenter 2
 node /node2[0-9]{2}/ {
-  include ::profiles::environments::net20
+  include ::profiles::environments::net2
 }
 
+# Datacenter 3
 node /node3[0-9]{2}/ {
-  include ::profiles::environments::net30
+  include ::profiles::environments::net3
 }
 
 define network_route (
