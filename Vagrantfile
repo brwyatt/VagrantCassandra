@@ -17,24 +17,24 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define :router do |router|
     router.vm.hostname = "router"
-    router.vm.network "private_network", ip: "192.168.10.10", virtualbox__intnet: "net10"
-    router.vm.network "private_network", ip: "192.168.20.10", virtualbox__intnet: "net20"
-    router.vm.network "private_network", ip: "192.168.30.10", virtualbox__intnet: "net30"
+    router.vm.network "private_network", ip: "10.1.10.10", virtualbox__intnet: "net10"
+    router.vm.network "private_network", ip: "10.1.20.10", virtualbox__intnet: "net20"
+    router.vm.network "private_network", ip: "10.1.30.10", virtualbox__intnet: "net30"
   end
 
   config.vm.define :node101 do |node101|
     node101.vm.hostname = "node101"
-    node101.vm.network "private_network", ip: "192.168.10.101", virtualbox__intnet: "net10"
+    node101.vm.network "private_network", ip: "10.1.10.101", virtualbox__intnet: "net10"
   end
 
   config.vm.define :node201 do |node201|
     node201.vm.hostname = "node201"
-    node201.vm.network "private_network", ip: "192.168.20.101", virtualbox__intnet: "net20"
+    node201.vm.network "private_network", ip: "10.1.20.101", virtualbox__intnet: "net20"
   end
 
   config.vm.define :node301 do |node301|
     node301.vm.hostname = "node301"
-    node301.vm.network "private_network", ip: "192.168.30.101", virtualbox__intnet: "net30"
+    node301.vm.network "private_network", ip: "10.1.30.101", virtualbox__intnet: "net30"
   end
 
   config.vm.provision "puppet" do |puppet|
