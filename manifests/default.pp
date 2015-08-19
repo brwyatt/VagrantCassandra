@@ -1,4 +1,5 @@
 node 'router' {
+  include ::profiles::router
 }
 
 node 'node1.net10' {
