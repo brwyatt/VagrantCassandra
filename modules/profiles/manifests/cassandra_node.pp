@@ -12,10 +12,13 @@ class profiles::cassandra_node {
     max_heap_size     => '128M',
     heap_newsize      => '16M',
   }
+
+  # Fix for packaging bug that references the incorrect jar
   file { '/usr/share/cassandra/lib/jamm-0.2.8.jar':
-    ensure => link,
-    target => '/usr/share/cassandra/lib/jamm-0.3.0.jar',
-    notify => Service['cassandra'],
+    ensure  => link,
+    target  => '/usr/share/cassandra/lib/jamm-0.3.0.jar',
+    notify  => Service['cassandra'],
+    require => Package['cassandra'],
   }
 
   $octets = split($::ipaddress_eth1, '[.]')
