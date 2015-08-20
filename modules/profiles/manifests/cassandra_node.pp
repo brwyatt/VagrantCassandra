@@ -7,7 +7,9 @@ class profiles::cassandra_node {
     listen_address    => $::ipaddress_eth1,
     broadcast_address => $::ipaddress_eth1,
     rpc_address       => $::ipaddress_eth1,
-    rpc_max_threads   => 128,
+    rpc_max_threads   => '128',
+    max_heap_size     => '128M',
+    heap_newsize      => '16M',
   }
   file { '/usr/share/cassandra/lib/jamm-0.2.8.jar':
     ensure => link,
