@@ -1,0 +1,4 @@
+From http://www.linuxfoundation.org/collaborate/workgroups/networking/netem
+
+sudo tc qdisc add dev eth1 root netem delay 100ms 50ms 75% distribution normal loss 5% 25%
+sudo tc qdisc add dev eth2 root netem delay 100ms 50ms 75% distribution normal loss 5% 25%
