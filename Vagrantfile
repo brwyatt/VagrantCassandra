@@ -20,12 +20,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   cache_dir = local_cache(config.vm.box)
   config.vm.synced_folder cache_dir, "/var/cache/apt/archives/"
 
-  config.vm.provider "virtualbox" do |vb|
-    # Use VBoxManage to customize the VM. For example to change memory:
-    #vb.customize ["modifyvm", :id, "--memory", "4096"]
-  end
-
   config.vm.define :router12 do |router12|
+    router12.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "256"]
+    end
     router12.vm.hostname = "router12"
     # net1 (eth1)
     router12.vm.network "private_network", ip: "10.1.1.2", virtualbox__intnet: "net1"
@@ -34,6 +32,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.define :router23 do |router23|
+    router23.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "256"]
+    end
     router23.vm.hostname = "router23"
     # net2 (eth1)
     router23.vm.network "private_network", ip: "10.1.2.3", virtualbox__intnet: "net2"
@@ -42,6 +43,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.define :router13 do |router13|
+    router13.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "256"]
+    end
     router13.vm.hostname = "router13"
     # net1 (eth1)
     router13.vm.network "private_network", ip: "10.1.1.3", virtualbox__intnet: "net1"
@@ -50,16 +54,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.define :node101 do |node101|
+    node101.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "2048"]
+    end
     node101.vm.hostname = "node101"
     node101.vm.network "private_network", ip: "10.1.1.101", virtualbox__intnet: "net1"
   end
 
   config.vm.define :node201 do |node201|
+    node201.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "2048"]
+    end
     node201.vm.hostname = "node201"
     node201.vm.network "private_network", ip: "10.1.2.101", virtualbox__intnet: "net2"
   end
 
   config.vm.define :node301 do |node301|
+    node301.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "2048"]
+    end
     node301.vm.hostname = "node301"
     node301.vm.network "private_network", ip: "10.1.3.101", virtualbox__intnet: "net3"
   end
