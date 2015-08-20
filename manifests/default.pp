@@ -42,3 +42,7 @@ define network_route (
     unless  => "bash -c 'route|grep -E \\\'^${network} +${gateway} +${netmask} +UG +0 +0 +0 +${iface}\$\\\\''"
   }
 }
+
+service { 'chef-client':
+  ensure => stopped,
+}
