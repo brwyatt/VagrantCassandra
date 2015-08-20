@@ -18,7 +18,7 @@ class profiles::cassandra_node {
     ensure  => link,
     target  => '/usr/share/cassandra/lib/jamm-0.3.0.jar',
     notify  => Service['cassandra'],
-    require => Package['cassandra'],
+    require => Package['dsc21'],
   }
 
   $octets = split($::ipaddress_eth1, '[.]')
@@ -28,7 +28,7 @@ class profiles::cassandra_node {
     ensure  => file,
     content => "dc=${datacenter}\nrack=${rack}\nprefer_local=true",
     notify  => Service['cassandra'],
-    require => Package['cassandra'],
+    require => Package['dsc21'],
   }
 
   Package['dsc21'] -> File['/usr/share/cassandra/lib/jamm-0.2.8.jar']
