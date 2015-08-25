@@ -46,3 +46,10 @@ define network_route (
 service { 'chef-client':
   ensure => stopped,
 }
+
+file { '/home/vagrant/.hushlogin':
+  ensure => file,
+  owner  => 'vagrant',
+  group  => 'vagrant',
+  mode   => '0770',
+}
