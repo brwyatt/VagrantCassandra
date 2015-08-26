@@ -8,8 +8,8 @@ class profiles::cassandra_node {
     listen_address    => $::ipaddress_eth1,
     broadcast_address => $::ipaddress_eth1,
     rpc_address       => $::ipaddress_eth1,
-    rpc_max_threads   => '128',
-    max_heap_size     => '128M',
+    rpc_max_threads   => '64',
+    max_heap_size     => '64M',
     heap_newsize      => '16M',
   }
 
@@ -32,4 +32,12 @@ class profiles::cassandra_node {
   }
 
   Package['dsc21'] -> File['/usr/share/cassandra/lib/jamm-0.2.8.jar']
+
+  package { 'datastax-agent':
+    ensure  => installed,
+    require => Class['cassandra'],
+  } ->
+  service { 'datastax-agent':
+    ensure  => running,
+  }
 }
