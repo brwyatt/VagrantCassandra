@@ -30,6 +30,11 @@ node /node3[0-9]{2}/ {
   include ::profiles::cassandra_node
 }
 
+# OpsCenter
+node "opscenter" {
+  include ::profiles::opscenter
+}
+
 define network_route (
   $network,
   $gateway,

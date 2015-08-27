@@ -30,7 +30,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # config.vm.synced_folder "../data", "/vagrant_data"
 
   router_ram = "256"
-  cassandra_ram = "768"
+  cassandra_ram = "1024"
 
   cache_dir = local_cache(config.vm.box)
   config.vm.synced_folder cache_dir, "/var/cache/apt/archives/"
@@ -138,6 +138,20 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     node303.vm.hostname = "node303"
     node303.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net3"
+  end
+
+  config.vm.define :opscenter, autostart: false do |opscenter|
+    opscenter.vm.provider "virtualbox" do |vb|
+      vb.memory = 512
+    end
+    opscenter.vm.network "forwarded_port", guest: 8888, host: 8888
+    opscenter.vm.hostname = "opscenter"
+    # net1 (eth1)
+    opscenter.vm.network "private_network", ip: "10.1.1.10", virtualbox__intnet: "net1"
+    # net2 (eth2)
+    opscenter.vm.network "private_network", ip: "10.1.2.10", virtualbox__intnet: "net2"
+    # net3 (eth2)
+    opscenter.vm.network "private_network", ip: "10.1.3.10", virtualbox__intnet: "net3"
   end
 
   config.vm.provision "puppet" do |puppet|

@@ -24,6 +24,7 @@ class profiles::cassandra_node {
   $octets = split($::ipaddress_eth1, '[.]')
   $datacenter = "DC${octets[2]}"
   $rack = "R${octets[3]}"
+  $opscenter = "${octets[0]}.${octets[1]}.${octets[2]}.10"
   file { '/etc/cassandra/cassandra-rackdc.properties':
     ensure  => file,
     content => "dc=${datacenter}\nrack=${rack}\nprefer_local=true",
@@ -36,6 +37,14 @@ class profiles::cassandra_node {
   package { 'datastax-agent':
     ensure  => installed,
     require => Class['cassandra'],
+  } ->
+  file { '/var/lib/datastax-agent/conf/address.yaml':
+    ensure  => file,
+    owner   => 'cassandra',
+    group   => 'cassandra',
+    mode    => '0640',
+    content => "stomp_interface: ${opscenter}\nuse_ssl: 0",
+    notify  => Service['datastax-agent'],
   } ->
   service { 'datastax-agent':
     ensure  => running,
