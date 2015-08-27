@@ -140,6 +140,20 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     node303.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net3"
   end
 
+  config.vm.define :opscenter, autostart: false do |opscenter|
+    opscenter.vm.provider "virtualbox" do |vb|
+      vb.memory = 512
+    end
+    opscenter.vm.network "forwarded_port", guest: 8888, host: 8888
+    opscenter.vm.hostname = "opscenter"
+    # net1 (eth1)
+    opscenter.vm.network "private_network", ip: "10.1.1.10", virtualbox__intnet: "net1"
+    # net2 (eth2)
+    opscenter.vm.network "private_network", ip: "10.1.2.10", virtualbox__intnet: "net2"
+    # net3 (eth2)
+    opscenter.vm.network "private_network", ip: "10.1.3.10", virtualbox__intnet: "net3"
+  end
+
   config.vm.provision "puppet" do |puppet|
     puppet.module_path = "modules"
   end
