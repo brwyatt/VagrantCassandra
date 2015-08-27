@@ -9,8 +9,8 @@ class profiles::cassandra_node {
     broadcast_address => $::ipaddress_eth1,
     rpc_address       => $::ipaddress_eth1,
     rpc_max_threads   => '64',
-    max_heap_size     => '64M',
-    heap_newsize      => '16M',
+    max_heap_size     => '32M',
+    heap_newsize      => '8M',
   }
 
   # Fix for packaging bug that references the incorrect jar
