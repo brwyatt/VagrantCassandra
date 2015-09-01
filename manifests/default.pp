@@ -2,7 +2,7 @@ stage { 'network':
   before => Stage['main'],
 }
 
-node /router[0-9]{2}/ {
+node /router-[0-9]-[0-9]/ {
   include ::profiles::router
 }
 
