@@ -7,9 +7,11 @@ network_ip_prefix = "10.1"
 network_name_prefix = "net"
 network_count = 3
 
+last_network = network_count-1
+
 # Setup DHCP
 if ARGV[0] == 'up'
-  (0..(network_count-1)).each do |network|
+  (0..last_network).each do |network|
     system("
       echo 'Creating DHCP server for #{network_name_prefix}#{network}...'
       VBoxManage dhcpserver add\
@@ -24,6 +26,7 @@ if ARGV[0] == 'up'
   end
 end
 
+# Create local caching for packages
 def local_cache(box_name)
   cache_dir = File.join(File.dirname(__FILE__), '.vagrant_cache', 'apt', box_name)
   partial_dir = File.join(cache_dir, 'partial')
@@ -34,47 +37,24 @@ end
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/trusty64"
 
-  # config.vm.network "forwarded_port", guest: 80, host: 8080
-  # config.ssh.forward_agent = true
-  # config.vm.synced_folder "../data", "/vagrant_data"
-
-  router_ram = "256"
   cassandra_ram = "768"
 
   cache_dir = local_cache(config.vm.box)
   config.vm.synced_folder cache_dir, "/var/cache/apt/archives/"
 
-  config.vm.define :router12 do |router12|
-    router12.vm.provider "virtualbox" do |vb|
-      vb.memory = router_ram
+  # Configure routers
+  (0..(last_network-1)).each do |net1|
+    ((net1+1)..last_network).each do |net2|
+      routername = "router-#{net1}-#{net2}"
+      config.vm.define routername do |router|
+        router.vm.privider "virtualbox" do |vb|
+          vb.memory = "256"
+        end
+        router.vm.hostname = routername
+        router.vm.network "private_network", ip: "#{network_ip_prefix}.#{net1}.#{net2}", virtualbox__intnet: "#{network_name_prefix}#{net1}"
+        router.vm.network "private_network", ip: "#{network_ip_prefix}.#{net2}.#{net1}", virtualbox__intnet: "#{network_name_prefix}#{net2}"
+      end
     end
-    router12.vm.hostname = "router12"
-    # net1 (eth1)
-    router12.vm.network "private_network", ip: "10.1.1.2", virtualbox__intnet: "net1"
-    # net2 (eth2)
-    router12.vm.network "private_network", ip: "10.1.2.1", virtualbox__intnet: "net2"
-  end
-
-  config.vm.define :router23 do |router23|
-    router23.vm.provider "virtualbox" do |vb|
-      vb.memory = router_ram
-    end
-    router23.vm.hostname = "router23"
-    # net2 (eth1)
-    router23.vm.network "private_network", ip: "10.1.2.3", virtualbox__intnet: "net2"
-    # net3 (eth2)
-    router23.vm.network "private_network", ip: "10.1.3.2", virtualbox__intnet: "net3"
-  end
-
-  config.vm.define :router13 do |router13|
-    router13.vm.provider "virtualbox" do |vb|
-      vb.memory = router_ram
-    end
-    router13.vm.hostname = "router13"
-    # net1 (eth1)
-    router13.vm.network "private_network", ip: "10.1.1.3", virtualbox__intnet: "net1"
-    # net3 (eth2)
-    router13.vm.network "private_network", ip: "10.1.3.1", virtualbox__intnet: "net3"
   end
 
   config.vm.define :node101 do |node101|
