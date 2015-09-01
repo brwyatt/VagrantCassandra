@@ -2,31 +2,13 @@ stage { 'network':
   before => Stage['main'],
 }
 
+# Routers
 node /router-[0-9]-[0-9]/ {
   include ::profiles::router
 }
 
-# Datacenter 1
-node /node1[0-9]{2}/ {
-  class { '::profiles::environments::net1':
-    stage => network,
-  }
-  include ::profiles::cassandra_node
-}
-
-# Datacenter 2
-node /node2[0-9]{2}/ {
-  class { '::profiles::environments::net2':
-    stage => network,
-  }
-  include ::profiles::cassandra_node
-}
-
-# Datacenter 3
-node /node3[0-9]{2}/ {
-  class { '::profiles::environments::net3':
-    stage => network,
-  }
+# Cassandra nodes
+node /cassandra-[0-9]-[0-9]/ {
   include ::profiles::cassandra_node
 }
 
