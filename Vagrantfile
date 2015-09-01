@@ -6,6 +6,7 @@ VAGRANTFILE_API_VERSION = "2"
 network_ip_prefix = "10.1"
 network_name_prefix = "net"
 network_count = 3
+max_nodes_per_datacenter = 3
 
 last_network = network_count-1
 
@@ -37,8 +38,6 @@ end
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/trusty64"
 
-  cassandra_ram = "768"
-
   cache_dir = local_cache(config.vm.box)
   config.vm.synced_folder cache_dir, "/var/cache/apt/archives/"
 
@@ -57,76 +56,28 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  config.vm.define :node101 do |node101|
-    node101.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
+  # Configure Cassandra nodes
+  (0..last_network).each do |net|
+    (1..max_nodes_per_datacenter).each do |num|
+      nodename = "cassandra-#{net}-#{num}"
+      if num == 1
+        # Only autostart if the first node
+        auto = true
+      else
+        auto = false
+      end
+      config.vm.define nodename, autostart: auto do |node|
+        node.vm.provider "virtualbox" do |vb|
+          vb.memory = "768"
+        end
+        node.vm.hostname = nodename
+        if num == 1
+          node.vm.network "private_network", ip: "#{network_ip_prefix}.#{net}.50", virtualbox__intnet: "#{network_name_prefix}#{net}"
+        else
+          node.vm.network "private_network", type: "dhcp", virtualbox__intnet: "#{network_name_prefix}#{net}"
+        end
+      end
     end
-    node101.vm.hostname = "node101"
-    node101.vm.network "private_network", ip: "10.1.1.101", virtualbox__intnet: "net1"
-  end
-
-  config.vm.define :node102, autostart: false do |node102|
-    node102.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node102.vm.hostname = "node102"
-    node102.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net1"
-  end
-
-  config.vm.define :node103, autostart: false do |node103|
-    node103.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node103.vm.hostname = "node103"
-    node103.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net1"
-  end
-
-  config.vm.define :node201 do |node201|
-    node201.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node201.vm.hostname = "node201"
-    node201.vm.network "private_network", ip: "10.1.2.101", virtualbox__intnet: "net2"
-  end
-
-  config.vm.define :node202, autostart: false do |node202|
-    node202.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node202.vm.hostname = "node202"
-    node202.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net2"
-  end
-
-  config.vm.define :node203, autostart: false do |node203|
-    node203.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node203.vm.hostname = "node203"
-    node203.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net2"
-  end
-
-  config.vm.define :node301 do |node301|
-    node301.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node301.vm.hostname = "node301"
-    node301.vm.network "private_network", ip: "10.1.3.101", virtualbox__intnet: "net3"
-  end
-
-  config.vm.define :node302, autostart: false do |node302|
-    node302.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node302.vm.hostname = "node302"
-    node302.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net3"
-  end
-
-  config.vm.define :node303, autostart: false do |node303|
-    node303.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node303.vm.hostname = "node303"
-    node303.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net3"
   end
 
   config.vm.define :opscenter, autostart: false do |opscenter|
