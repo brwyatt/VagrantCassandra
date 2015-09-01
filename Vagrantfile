@@ -3,17 +3,26 @@
 
 VAGRANTFILE_API_VERSION = "2"
 
+network_ip_prefix = "10.1"
+network_name_prefix = "net"
+network_count = 3
+
 # Setup DHCP
-system("
-  if [ #{ARGV[0]} = 'up' ]; then
-    echo 'Creating DHCP server for net1...'
-    VBoxManage dhcpserver add --netname net1 --ip 10.1.1.254 --netmask 255.255.255.0 --lowerip 10.1.1.150 --upperip 10.1.1.250 --enable || true
-    echo 'Creating DHCP server for net2...'
-    VBoxManage dhcpserver add --netname net2 --ip 10.1.2.254 --netmask 255.255.255.0 --lowerip 10.1.2.150 --upperip 10.1.2.250 --enable || true
-    echo 'Creating DHCP server for net3...'
-    VBoxManage dhcpserver add --netname net3 --ip 10.1.3.254 --netmask 255.255.255.0 --lowerip 10.1.3.150 --upperip 10.1.3.250 --enable || true
-  fi
-")
+if ARGV[0] == 'up'
+  (0..(network_count-1)).each do |network|
+    system("
+      echo 'Creating DHCP server for #{network_name_prefix}#{network}...'
+      VBoxManage dhcpserver add\
+      --netname #{network_name_prefix}#{network}\
+      --ip #{network_ip_prefix}.#{network}.254\
+      --netmask 255.255.255.0\
+      --lowerip #{network_ip_prefix}.#{network}.100\
+      --upperip #{network_ip_prefix}.#{network}.250\
+      --enable\
+      || true
+    ")
+  end
+end
 
 def local_cache(box_name)
   cache_dir = File.join(File.dirname(__FILE__), '.vagrant_cache', 'apt', box_name)
