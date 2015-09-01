@@ -46,7 +46,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     ((net1+1)..last_network).each do |net2|
       routername = "router-#{net1}-#{net2}"
       config.vm.define routername do |router|
-        router.vm.privider "virtualbox" do |vb|
+        router.vm.provider "virtualbox" do |vb|
           vb.memory = "256"
         end
         router.vm.hostname = routername
