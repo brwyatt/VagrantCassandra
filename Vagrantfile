@@ -3,18 +3,30 @@
 
 VAGRANTFILE_API_VERSION = "2"
 
-# Setup DHCP
-system("
-  if [ #{ARGV[0]} = 'up' ]; then
-    echo 'Creating DHCP server for net1...'
-    VBoxManage dhcpserver add --netname net1 --ip 10.1.1.254 --netmask 255.255.255.0 --lowerip 10.1.1.150 --upperip 10.1.1.250 --enable || true
-    echo 'Creating DHCP server for net2...'
-    VBoxManage dhcpserver add --netname net2 --ip 10.1.2.254 --netmask 255.255.255.0 --lowerip 10.1.2.150 --upperip 10.1.2.250 --enable || true
-    echo 'Creating DHCP server for net3...'
-    VBoxManage dhcpserver add --netname net3 --ip 10.1.3.254 --netmask 255.255.255.0 --lowerip 10.1.3.150 --upperip 10.1.3.250 --enable || true
-  fi
-")
+network_ip_prefix = "10.1"
+network_name_prefix = "net"
+network_count = 3
+max_nodes_per_datacenter = 3
+seed_node_ip = 50
 
+# Setup DHCP
+if ARGV[0] == 'up'
+  (1..network_count).each do |network|
+    system("
+      echo 'Creating DHCP server for #{network_name_prefix}#{network}...'
+      VBoxManage dhcpserver add\
+      --netname #{network_name_prefix}#{network}\
+      --ip #{network_ip_prefix}.#{network}.254\
+      --netmask 255.255.255.0\
+      --lowerip #{network_ip_prefix}.#{network}.100\
+      --upperip #{network_ip_prefix}.#{network}.250\
+      --enable\
+      || true
+    ")
+  end
+end
+
+# Create local caching for packages
 def local_cache(box_name)
   cache_dir = File.join(File.dirname(__FILE__), '.vagrant_cache', 'apt', box_name)
   partial_dir = File.join(cache_dir, 'partial')
@@ -22,137 +34,76 @@ def local_cache(box_name)
   cache_dir
 end
 
+# Generate list of seeds and networks
+cassandra_seeds = ""
+network_list = ""
+(1..network_count).each do |net|
+  cassandra_seeds = cassandra_seeds + "\n  - #{network_ip_prefix}.#{net}.#{seed_node_ip}"
+  network_list = network_list + "\n  - #{net}"
+end
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/trusty64"
-
-  # config.vm.network "forwarded_port", guest: 80, host: 8080
-  # config.ssh.forward_agent = true
-  # config.vm.synced_folder "../data", "/vagrant_data"
-
-  router_ram = "256"
-  cassandra_ram = "768"
+  # Work around cosmetic issue (default uses -l which misbehaves when not in interactive shell)
+  config.ssh.shell = "/bin/bash"
 
   cache_dir = local_cache(config.vm.box)
   config.vm.synced_folder cache_dir, "/var/cache/apt/archives/"
 
-  config.vm.define :router12 do |router12|
-    router12.vm.provider "virtualbox" do |vb|
-      vb.memory = router_ram
+  # Configure routers
+  (1..(network_count-1)).each do |net1|
+    ((net1+1)..network_count).each do |net2|
+      routername = "router-#{net1}-#{net2}"
+      config.vm.define routername do |router|
+        router.vm.provider "virtualbox" do |vb|
+          vb.memory = "256"
+        end
+        router.vm.hostname = routername
+        router.vm.network "private_network", ip: "#{network_ip_prefix}.#{net1}.#{net2}", virtualbox__intnet: "#{network_name_prefix}#{net1}"
+        router.vm.network "private_network", ip: "#{network_ip_prefix}.#{net2}.#{net1}", virtualbox__intnet: "#{network_name_prefix}#{net2}"
+      end
     end
-    router12.vm.hostname = "router12"
-    # net1 (eth1)
-    router12.vm.network "private_network", ip: "10.1.1.2", virtualbox__intnet: "net1"
-    # net2 (eth2)
-    router12.vm.network "private_network", ip: "10.1.2.1", virtualbox__intnet: "net2"
   end
 
-  config.vm.define :router23 do |router23|
-    router23.vm.provider "virtualbox" do |vb|
-      vb.memory = router_ram
+  # Configure Cassandra nodes
+  (1..network_count).each do |net|
+    (1..max_nodes_per_datacenter).each do |num|
+      nodename = "cassandra-#{net}-#{num}"
+      if num == 1
+        # Only autostart if the first node
+        auto = true
+      else
+        auto = false
+      end
+      config.vm.define nodename, autostart: auto do |node|
+        node.vm.provider "virtualbox" do |vb|
+          vb.memory = "768"
+        end
+        node.vm.hostname = nodename
+        if num == 1
+          node.vm.network "private_network", ip: "#{network_ip_prefix}.#{net}.#{seed_node_ip}", virtualbox__intnet: "#{network_name_prefix}#{net}"
+        else
+          node.vm.network "private_network", type: "dhcp", virtualbox__intnet: "#{network_name_prefix}#{net}"
+        end
+      end
     end
-    router23.vm.hostname = "router23"
-    # net2 (eth1)
-    router23.vm.network "private_network", ip: "10.1.2.3", virtualbox__intnet: "net2"
-    # net3 (eth2)
-    router23.vm.network "private_network", ip: "10.1.3.2", virtualbox__intnet: "net3"
-  end
-
-  config.vm.define :router13 do |router13|
-    router13.vm.provider "virtualbox" do |vb|
-      vb.memory = router_ram
-    end
-    router13.vm.hostname = "router13"
-    # net1 (eth1)
-    router13.vm.network "private_network", ip: "10.1.1.3", virtualbox__intnet: "net1"
-    # net3 (eth2)
-    router13.vm.network "private_network", ip: "10.1.3.1", virtualbox__intnet: "net3"
-  end
-
-  config.vm.define :node101 do |node101|
-    node101.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node101.vm.hostname = "node101"
-    node101.vm.network "private_network", ip: "10.1.1.101", virtualbox__intnet: "net1"
-  end
-
-  config.vm.define :node102, autostart: false do |node102|
-    node102.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node102.vm.hostname = "node102"
-    node102.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net1"
-  end
-
-  config.vm.define :node103, autostart: false do |node103|
-    node103.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node103.vm.hostname = "node103"
-    node103.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net1"
-  end
-
-  config.vm.define :node201 do |node201|
-    node201.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node201.vm.hostname = "node201"
-    node201.vm.network "private_network", ip: "10.1.2.101", virtualbox__intnet: "net2"
-  end
-
-  config.vm.define :node202, autostart: false do |node202|
-    node202.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node202.vm.hostname = "node202"
-    node202.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net2"
-  end
-
-  config.vm.define :node203, autostart: false do |node203|
-    node203.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node203.vm.hostname = "node203"
-    node203.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net2"
-  end
-
-  config.vm.define :node301 do |node301|
-    node301.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node301.vm.hostname = "node301"
-    node301.vm.network "private_network", ip: "10.1.3.101", virtualbox__intnet: "net3"
-  end
-
-  config.vm.define :node302, autostart: false do |node302|
-    node302.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node302.vm.hostname = "node302"
-    node302.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net3"
-  end
-
-  config.vm.define :node303, autostart: false do |node303|
-    node303.vm.provider "virtualbox" do |vb|
-      vb.memory = cassandra_ram
-    end
-    node303.vm.hostname = "node303"
-    node303.vm.network "private_network", type: "dhcp", virtualbox__intnet: "net3"
   end
 
   config.vm.define :opscenter, autostart: false do |opscenter|
     opscenter.vm.provider "virtualbox" do |vb|
-      vb.memory = 512
+      vb.memory = "512"
     end
     opscenter.vm.network "forwarded_port", guest: 8888, host: 8888
     opscenter.vm.hostname = "opscenter"
-    # net1 (eth1)
-    opscenter.vm.network "private_network", ip: "10.1.1.10", virtualbox__intnet: "net1"
-    # net2 (eth2)
-    opscenter.vm.network "private_network", ip: "10.1.2.10", virtualbox__intnet: "net2"
-    # net3 (eth2)
-    opscenter.vm.network "private_network", ip: "10.1.3.10", virtualbox__intnet: "net3"
+
+    (1..network_count).each do |net|
+      opscenter.vm.network "private_network", ip: "#{network_ip_prefix}.#{net}.25", virtualbox__intnet: "#{network_name_prefix}#{net}"
+    end
   end
+
+  config.vm.provision "shell", inline: "echo -e '---\n:yaml:\n  :datadir: \"/etc/puppet/hieradata\"\n:hierarchy:\n  - cassandra' > /etc/puppet/hiera.yaml"
+  seedlist = ''
+  config.vm.provision "shell", inline: "mkdir -p /etc/puppet/hieradata/ && echo -e '---\ncassandra::seeds:#{cassandra_seeds}\nprofiles::vagrant_network::networks:#{network_list}' > /etc/puppet/hieradata/cassandra.yaml"
 
   config.vm.provision "puppet" do |puppet|
     puppet.module_path = "modules"
