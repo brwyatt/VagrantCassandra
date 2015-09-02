@@ -77,7 +77,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       end
       config.vm.define nodename, autostart: auto do |node|
         node.vm.provider "virtualbox" do |vb|
-          vb.memory = "768"
+          vb.memory = "1024"
         end
         node.vm.hostname = nodename
         if num == 1
