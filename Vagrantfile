@@ -7,12 +7,11 @@ network_ip_prefix = "10.1"
 network_name_prefix = "net"
 network_count = 3
 max_nodes_per_datacenter = 3
-
-last_network = network_count-1
+seed_node_ip = 50
 
 # Setup DHCP
 if ARGV[0] == 'up'
-  (0..last_network).each do |network|
+  (1..network_count).each do |network|
     system("
       echo 'Creating DHCP server for #{network_name_prefix}#{network}...'
       VBoxManage dhcpserver add\
@@ -35,15 +34,25 @@ def local_cache(box_name)
   cache_dir
 end
 
+# Generate list of seeds and networks
+cassandra_seeds = ""
+network_list = ""
+(1..network_count).each do |net|
+  cassandra_seeds = cassandra_seeds + "\n  - #{network_ip_prefix}.#{net}.#{seed_node_ip}"
+  network_list = network_list + "\n  - #{net}"
+end
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/trusty64"
+  # Work around cosmetic issue (default uses -l which misbehaves when not in interactive shell)
+  config.ssh.shell = "/bin/bash"
 
   cache_dir = local_cache(config.vm.box)
   config.vm.synced_folder cache_dir, "/var/cache/apt/archives/"
 
   # Configure routers
-  (0..(last_network-1)).each do |net1|
-    ((net1+1)..last_network).each do |net2|
+  (1..(network_count-1)).each do |net1|
+    ((net1+1)..network_count).each do |net2|
       routername = "router-#{net1}-#{net2}"
       config.vm.define routername do |router|
         router.vm.provider "virtualbox" do |vb|
@@ -57,7 +66,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   # Configure Cassandra nodes
-  (0..last_network).each do |net|
+  (1..network_count).each do |net|
     (1..max_nodes_per_datacenter).each do |num|
       nodename = "cassandra-#{net}-#{num}"
       if num == 1
@@ -72,7 +81,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         end
         node.vm.hostname = nodename
         if num == 1
-          node.vm.network "private_network", ip: "#{network_ip_prefix}.#{net}.50", virtualbox__intnet: "#{network_name_prefix}#{net}"
+          node.vm.network "private_network", ip: "#{network_ip_prefix}.#{net}.#{seed_node_ip}", virtualbox__intnet: "#{network_name_prefix}#{net}"
         else
           node.vm.network "private_network", type: "dhcp", virtualbox__intnet: "#{network_name_prefix}#{net}"
         end
@@ -87,10 +96,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     opscenter.vm.network "forwarded_port", guest: 8888, host: 8888
     opscenter.vm.hostname = "opscenter"
 
-    (0..last_network).each do |net|
+    (1..network_count).each do |net|
       opscenter.vm.network "private_network", ip: "#{network_ip_prefix}.#{net}.25", virtualbox__intnet: "#{network_name_prefix}#{net}"
     end
   end
+
+  config.vm.provision "shell", inline: "echo -e '---\n:yaml:\n  :datadir: \"/etc/puppet/hieradata\"\n:hierarchy:\n  - cassandra' > /etc/puppet/hiera.yaml"
+  seedlist = ''
+  config.vm.provision "shell", inline: "mkdir -p /etc/puppet/hieradata/ && echo -e '---\ncassandra::seeds:#{cassandra_seeds}\nprofiles::vagrant_network::networks:#{network_list}' > /etc/puppet/hieradata/cassandra.yaml"
 
   config.vm.provision "puppet" do |puppet|
     puppet.module_path = "modules"

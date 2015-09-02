@@ -10,6 +10,7 @@ node /router-[0-9]-[0-9]/ {
 # Cassandra nodes
 node /cassandra-[0-9]-[0-9]/ {
   include ::profiles::cassandra_node
+  include ::profiles::vagrant_network
 }
 
 # OpsCenter

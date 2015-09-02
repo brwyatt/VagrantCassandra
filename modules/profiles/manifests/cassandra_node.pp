@@ -2,7 +2,6 @@ class profiles::cassandra_node {
   class { 'cassandra':
     cluster_name      => 'vagrantCluster',
     package_name      => 'dsc21',
-    seeds             => [ '10.1.0.50', '10.1.1.50', '10.1.2.50' ],
     version           => '2.1.8-1',
     endpoint_snitch   => 'GossipingPropertyFileSnitch',
     listen_address    => $::ipaddress_eth1,
@@ -24,7 +23,7 @@ class profiles::cassandra_node {
   $octets = split($::ipaddress_eth1, '[.]')
   $datacenter = "DC${octets[2]}"
   $rack = "R${octets[3]}"
-  $opscenter = "${octets[0]}.${octets[1]}.${octets[2]}.10"
+  $opscenter = "${octets[0]}.${octets[1]}.${octets[2]}.25"
   file { '/etc/cassandra/cassandra-rackdc.properties':
     ensure  => file,
     content => "dc=${datacenter}\nrack=${rack}\nprefer_local=true",
