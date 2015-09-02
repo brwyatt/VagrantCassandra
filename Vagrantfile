@@ -82,16 +82,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define :opscenter, autostart: false do |opscenter|
     opscenter.vm.provider "virtualbox" do |vb|
-      vb.memory = 512
+      vb.memory = "512"
     end
     opscenter.vm.network "forwarded_port", guest: 8888, host: 8888
     opscenter.vm.hostname = "opscenter"
-    # net1 (eth1)
-    opscenter.vm.network "private_network", ip: "10.1.1.10", virtualbox__intnet: "net1"
-    # net2 (eth2)
-    opscenter.vm.network "private_network", ip: "10.1.2.10", virtualbox__intnet: "net2"
-    # net3 (eth2)
-    opscenter.vm.network "private_network", ip: "10.1.3.10", virtualbox__intnet: "net3"
+
+    (0..last_network).each do |net|
+      opscenter.vm.network "private_network", ip: "#{network_ip_prefix}.#{net}.25", virtualbox__intnet: "#{network_name_prefix}#{net}"
+    end
   end
 
   config.vm.provision "puppet" do |puppet|
