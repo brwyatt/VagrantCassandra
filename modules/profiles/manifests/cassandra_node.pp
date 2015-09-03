@@ -1,15 +1,16 @@
 class profiles::cassandra_node {
   class { 'cassandra':
-    cluster_name      => 'vagrantCluster',
-    package_name      => 'dsc21',
-    version           => '2.1.8-1',
-    endpoint_snitch   => 'GossipingPropertyFileSnitch',
-    listen_address    => $::ipaddress_eth1,
-    broadcast_address => $::ipaddress_eth1,
-    rpc_address       => $::ipaddress_eth1,
-    rpc_max_threads   => '64',
-    max_heap_size     => '64M',
-    heap_newsize      => '16M',
+    cluster_name          => 'VagrantCluster',
+    package_name          => 'dsc21',
+    version               => '2.1.8-1',
+    endpoint_snitch       => 'GossipingPropertyFileSnitch',
+    listen_address        => '0.0.0.0',
+    broadcast_address     => $::ipaddress_eth1,
+    rpc_address           => '0.0.0.0',
+    rpc_broadcast_address => $::ipaddress_eth1,
+    rpc_max_threads       => '64',
+    max_heap_size         => '64M',
+    heap_newsize          => '16M',
   }
 
   # Fix for packaging bug that references the incorrect jar
@@ -46,6 +47,7 @@ class profiles::cassandra_node {
     notify  => Service['datastax-agent'],
   } ->
   service { 'datastax-agent':
-    ensure  => running,
+    ensure    => running,
+    subscribe => Service['cassandra'],
   }
 }

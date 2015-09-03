@@ -10,7 +10,7 @@
 	url = https://github.com/puppetlabs/puppetlabs-stdlib
 [submodule "modules/cassandra"]
 	path = modules/cassandra
-	url = https://github.com/msimonin/puppet-cassandra.git
+	url = git@github.com:brwyatt/puppet-cassandra.git
 [submodule "modules/apt"]
 	path = modules/apt
 	url = https://github.com/puppetlabs/puppetlabs-apt.git
