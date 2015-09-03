@@ -4,7 +4,7 @@ class profiles::cassandra_node {
     package_name          => 'dsc21',
     version               => '2.1.8-1',
     endpoint_snitch       => 'GossipingPropertyFileSnitch',
-    listen_address        => '0.0.0.0',
+    listen_address        => $::ipaddress_eth1,
     broadcast_address     => $::ipaddress_eth1,
     rpc_address           => '0.0.0.0',
     rpc_broadcast_address => $::ipaddress_eth1,
