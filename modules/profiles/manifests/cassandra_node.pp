@@ -1,9 +1,17 @@
 class profiles::cassandra_node {
+
+  $octets = split($::ipaddress_eth1, '[.]')
+  $datacenter = "DC${octets[2]}"
+  $rack = "R${octets[3]}"
+  $opscenter = "${octets[0]}.${octets[1]}.${octets[2]}.25"
+
   class { 'cassandra':
     cluster_name          => 'VagrantCluster',
     package_name          => 'dsc21',
     version               => '2.1.8-1',
     endpoint_snitch       => 'GossipingPropertyFileSnitch',
+    dc                    => $datacenter,
+    rack                  => $rack,
     listen_address        => $::ipaddress_eth1,
     broadcast_address     => $::ipaddress_eth1,
     rpc_address           => '0.0.0.0',
@@ -17,17 +25,6 @@ class profiles::cassandra_node {
   file { '/usr/share/cassandra/lib/jamm-0.2.8.jar':
     ensure  => link,
     target  => '/usr/share/cassandra/lib/jamm-0.3.0.jar',
-    notify  => Service['cassandra'],
-    require => Package['dsc21'],
-  }
-
-  $octets = split($::ipaddress_eth1, '[.]')
-  $datacenter = "DC${octets[2]}"
-  $rack = "R${octets[3]}"
-  $opscenter = "${octets[0]}.${octets[1]}.${octets[2]}.25"
-  file { '/etc/cassandra/cassandra-rackdc.properties':
-    ensure  => file,
-    content => "dc=${datacenter}\nrack=${rack}\nprefer_local=true",
     notify  => Service['cassandra'],
     require => Package['dsc21'],
   }
